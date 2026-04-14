@@ -18,6 +18,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMm
 let state = {
     auditorName: localStorage.getItem('auditorName') || null,
     selectedRoom: null,
+    selectedAuditada: null,
     currentAudit: {},
     pendingSyncs: [],
     isOnline: navigator.onLine
@@ -123,11 +124,31 @@ function renderAuditPane() {
         `;
     }
 
+    if (!state.selectedAuditada) {
+        const auditadas = ["Ruby", "Bianca", "Ivonne", "Maggi"];
+        return `
+            <div class="audit-header">
+                <h2>Habitación ${state.selectedRoom}</h2>
+            </div>
+            <div class="auditada-selection">
+                <p style="margin-bottom: 15px; font-weight: 500;">¿Quién realizó la limpieza?</p>
+                <div class="auditada-grid">
+                    ${auditadas.map(name => `
+                        <button class="btn-auditada" onclick="selectAuditada('${name}')">${name}</button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
     const isComplete = CHECKLIST_ITEMS.every(item => state.currentAudit[item.id]?.status !== undefined);
 
     return `
         <div class="audit-header">
-            <h2>Auditando: Habitación ${state.selectedRoom}</h2>
+            <div>
+                <h2>Habitación ${state.selectedRoom}</h2>
+                <span class="auditada-badge">Limpió: ${state.selectedAuditada}</span>
+            </div>
             <button class="btn-save-report" onclick="saveAudit()" ${!isComplete ? 'disabled' : ''}>
                 💾 Guardar Reporte
             </button>
@@ -205,10 +226,16 @@ window.changeAuditor = function () {
 
 window.selectRoom = function (num) {
     state.selectedRoom = num;
+    state.selectedAuditada = null; // Reset auditada
     state.currentAudit = {}; // Reset previous audit data
     updateAuditPane();
     const ap = document.getElementById('audit-pane');
     if (ap) ap.scrollTo(0, 0);
+};
+
+window.selectAuditada = function (name) {
+    state.selectedAuditada = name;
+    updateAuditPane();
 };
 
 window.setAuditStatus = function (id, value) {
@@ -224,6 +251,7 @@ window.saveAudit = function () {
     const auditData = {
         fecha: new Date().toISOString(),
         auditora: state.auditorName,
+        auditada: state.selectedAuditada,
         habitacion: state.selectedRoom,
         detalles: state.currentAudit
     };
@@ -235,6 +263,7 @@ window.saveAudit = function () {
 
     // Reset view
     state.selectedRoom = null;
+    state.selectedAuditada = null;
     state.currentAudit = {};
     updateAuditPane();
 

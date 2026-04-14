@@ -12,6 +12,7 @@ function doPost(e) {
     var data = JSON.parse(rawData);
     var details = data.detalles;
     var auditor = data.auditora || "Desconocida";
+    var auditada = data.auditada || "No especificada";
     
     // Conectar explícitamente por el ID de tu Google Sheet
     var sheetId = "13n-axaQAwd1R6gqJciwwnYf29MqSdZVVQviWIeujJlk";
@@ -22,10 +23,10 @@ function doPost(e) {
     if (!sheet) {
       sheet = ss.insertSheet("Registros_V2");
       sheet.appendRow([
-        "Fecha", "Auditora", "Habitación", "Cama", "Baño", "Barra", 
+        "Fecha", "Auditora", "Auditada", "Habitación", "Cama", "Baño", "Barra", 
         "Basura", "Puertas", "Ventanas", "Escritorio", "Piso", "Pelos/Peluzas"
       ]);
-      sheet.getRange("A1:L1").setFontWeight("bold");
+      sheet.getRange("A1:M1").setFontWeight("bold");
     }
     
     // Formatear Fecha ("dd/MM/yyyy")
@@ -44,16 +45,17 @@ function doPost(e) {
     var rowData = [
       dateStr, // A
       auditor, // B
-      "Hab. " + data.habitacion, // C
-      formatItem('cama'), // D
-      formatItem('bano'), // E
-      formatItem('barra'), // F
-      formatItem('basura'), // G
-      formatItem('puertas'), // H
-      formatItem('ventanas'), // I
-      formatItem('escritorio'), // J
-      formatItem('piso'), // K
-      formatItem('pelos') // L
+      auditada, // C
+      "Hab. " + data.habitacion, // D
+      formatItem('cama'), // E
+      formatItem('bano'), // F
+      formatItem('barra'), // G
+      formatItem('basura'), // H
+      formatItem('puertas'), // I
+      formatItem('ventanas'), // J
+      formatItem('escritorio'), // K
+      formatItem('piso'), // L
+      formatItem('pelos') // M
     ];
     
     sheet.appendRow(rowData);
@@ -71,11 +73,11 @@ function doPost(e) {
         groupColor = (prevColor === "#ffffff") ? "#f3f4f6" : "#ffffff";
       }
     }
-    // Color de los primeros 3 (Fecha, Auditora, Habitación)
-    sheet.getRange(lastRow, 1, 1, 3).setBackground(groupColor);
+    // Color de los primeros 4 (Fecha, Auditora, Auditada, Habitación)
+    sheet.getRange(lastRow, 1, 1, 4).setBackground(groupColor);
     
     // Pintar Celdas de Checklist individualmente (Bien/Regular/Mal)
-    for (var col = 4; col <= 12; col++) {
+    for (var col = 5; col <= 13; col++) {
       var cellValue = rowData[col - 1].toString();
       var cellRange = sheet.getRange(lastRow, col);
       if (cellValue.indexOf("Mal") !== -1) {
@@ -90,7 +92,7 @@ function doPost(e) {
     }
     
     sheet.setRowHeight(lastRow, 40); 
-    sheet.getRange(lastRow, 1, 1, 12).setWrap(true).setVerticalAlignment("middle");
+    sheet.getRange(lastRow, 1, 1, 13).setWrap(true).setVerticalAlignment("middle");
     
     // 3. Crear Dashboard y Gráfica Diaria
     var dashSheet = ss.getSheetByName("Dashboard_Diario");
@@ -103,43 +105,60 @@ function doPost(e) {
     
     dashSheet.getRange("B2").setValue(dateStr).setFontSize(14).setFontWeight("bold");
     
-    // Contar TODO lo de este día usando los datos visuales
+    // 4. Estadísticas por Auditada
     var allData = sheet.getDataRange().getDisplayValues();
-    var countBien = 0, countRegular = 0, countMal = 0;
+    var stats = {}; // { "Ruby": { Bien: 10, Regular: 2, Mal: 1 }, ... }
     
     for (var i = 1; i < allData.length; i++) {
       if (allData[i][0] === dateStr) {
-        for (var c = 3; c <= 11; c++) {
+        var person = allData[i][2]; // Auditada
+        if (!stats[person]) stats[person] = { Bien: 0, Regular: 0, Mal: 0 };
+        
+        for (var c = 4; c <= 12; c++) {
           var val = allData[i][c].toString();
-          if (val.indexOf("Bien") !== -1) countBien++;
-          else if (val.indexOf("Regular") !== -1) countRegular++;
-          else if (val.indexOf("Mal") !== -1) countMal++;
+          if (val.indexOf("Bien") !== -1) stats[person].Bien++;
+          else if (val.indexOf("Regular") !== -1) stats[person].Regular++;
+          else if (val.indexOf("Mal") !== -1) stats[person].Mal++;
         }
       }
     }
     
-    // Escribir en Dashboard
-    dashSheet.getRange("A5:B7").setValues([
-      ["Bien", countBien],
-      ["Regular", countRegular],
-      ["Mal", countMal]
-    ]);
-    dashSheet.getRange("A5").setBackground("#b7e1cd");
-    dashSheet.getRange("A6").setBackground("#fce8b2");
-    dashSheet.getRange("A7").setBackground("#f4c7c3");
+    // Limpiar área de dashboard
+    dashSheet.getRange("A4:Z100").clear();
     
-    // Checar si hay gráfica, si no, crearla dinámicamente conectada a la tabla
-    var charts = dashSheet.getCharts();
-    if (charts.length === 0) {
+    var currentLine = 4;
+    for (var person in stats) {
+      dashSheet.getRange(currentLine, 1).setValue("Auditada: " + person).setFontWeight("bold").setBackground("#e2e8f0");
+      dashSheet.getRange(currentLine, 2).setValue("Puntos").setFontWeight("bold").setBackground("#e2e8f0");
+      
+      var startRow = currentLine + 1;
+      var dataToRows = [
+        ["Bien", stats[person].Bien],
+        ["Regular", stats[person].Regular],
+        ["Mal", stats[person].Mal]
+      ];
+      dashSheet.getRange(startRow, 1, 3, 2).setValues(dataToRows);
+      
+      // Colores
+      dashSheet.getRange(startRow, 1).setBackground("#b7e1cd");
+      dashSheet.getRange(startRow + 1, 1).setBackground("#fce8b2");
+      dashSheet.getRange(startRow + 2, 1).setBackground("#f4c7c3");
+      
+      // Crear/Actualizar Gráfica para esta persona
+      var charts = dashSheet.getCharts();
+      var chartTitle = "Limpieza: " + person + " (" + dateStr + ")";
+      
       var chartBuilder = dashSheet.newChart()
         .asPieChart()
-        .addRange(dashSheet.getRange("A4:B7"))
-        .setPosition(1, 4, 0, 0)
-        .setOption('title', 'Limpieza del Día de Hoy')
+        .addRange(dashSheet.getRange(startRow, 1, 3, 2))
+        .setPosition(currentLine, 4, 0, 0)
+        .setOption('title', chartTitle)
         .setOption('pieSliceText', 'value')
-        .setOption('colors', ['#34a853', '#fbbc04', '#ea4335']); // Verde, Amarillo, Rojo Google
+        .setOption('colors', ['#34a853', '#fbbc04', '#ea4335']);
       
       dashSheet.insertChart(chartBuilder.build());
+      
+      currentLine += 5; // Espacio para la siguiente tabla/gráfica
     }
     
     return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
