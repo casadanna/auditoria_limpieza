@@ -1,19 +1,41 @@
 import './style.css';
 
 const NUM_ROOMS = 35;
-const CHECKLIST_ITEMS = [
-    { id: 'cama', label: 'Cama', icon: '🛏️' },
-    { id: 'bano', label: 'Baño', icon: '🚿' },
-    { id: 'barra', label: 'Barra', icon: '🍽️' },
-    { id: 'basura', label: 'Cestos de basura', icon: '🗑️' },
-    { id: 'puertas', label: 'Limpieza en puertas', icon: '🚪' },
-    { id: 'ventanas', label: 'Ventanas', icon: '🪟' },
-    { id: 'escritorio', label: 'Escritorio', icon: '🪑' },
-    { id: 'piso', label: 'Piso', icon: '🧹' },
-    { id: 'pelos', label: 'Pelos o peluzas en camas', icon: '🔎' }
-];
-
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMmTSpH0ZRX-HOFlvFW_yQKFEnJ1yadghuSI6LK37HkFIoo/exec';
+
+const AUDIT_STRUCTURE = [
+    {
+        id: "habitacion",
+        title: "Habitación",
+        subsections: [
+            { id: "hab_puertas", title: "Puertas", points: ["Limpieza", "Candado"] },
+            { id: "hab_paredes", title: "Paredes Y Piso", points: ["Apagadores", "Soclos", "Ventanas", "Paredes", "Piso"] },
+            { id: "hab_muebles", title: "Muebles", points: ["Escritorio", "Closet", "Repisa de TV", "Cortineros", "Buros", "Lamparas", "Espejos", "Silla"] },
+            { id: "hab_amenidades", title: "Amenidades", points: ["Café", "Botella de Agua", "Ganchos", "Bolsa de Lavanderia"] },
+            { id: "hab_electricos", title: "Eléctricos", points: ["Focos Funcionando", "Aire Acondicionado Funcionando", "TV Limpia y funcionando", "Teléfono Funcionando y Limpio", "Cafetera Funcionando", "Frigobar Funcionando", "Microondas"] },
+            { id: "hab_camas", title: "Camas", points: ["Tendido", "Almohadas Alineadas", "Limpieza en Cabezeras", "Camino de Cama", "Limpieza Base de Cama", "Limpieza bajo cama"] },
+            { id: "hab_cortinas", title: "Cortinas", points: ["Limpieza"] }
+        ]
+    },
+    {
+        id: "bano",
+        title: "Baño",
+        subsections: [
+            { id: "bano_amenidades", title: "Amenidades", points: ["Shampoo", "Jabón", "Papel Higienico", "Lustra Calzado"] },
+            { id: "bano_lavabo", title: "Lavabo", points: ["Limpieza Espejo", "Limpieza Lavabo"] },
+            { id: "bano_wc", title: "WC", points: ["Limpio y sin mal olor", "Tanque limpio", "Extractor Limpio"] },
+            { id: "bano_ducha", title: "Ducha", points: ["Piso Limpio", "Paredes Limpias", "Cromos Limpios", "Cortina/Cristal Limpio", "Jabonera Limpia", "Coladera Limpia", "Rieles Limpios"] }
+        ]
+    },
+    {
+        id: "terraza",
+        title: "Terraza",
+        hasCondition: true,
+        subsections: [
+            { id: "terraza_limpieza", title: "Limpieza", points: ["Cristales", "Rieles", "Muro", "Piso"] }
+        ]
+    }
+];
 
 function getSavedCompletedRooms() {
     try {
@@ -37,7 +59,10 @@ let state = {
     auditorName: localStorage.getItem('auditorName') || null,
     selectedRoom: null,
     selectedAuditada: null,
-    currentAudit: {},
+    currentAudit: {}, // "hab_puertas_0": { status: "Completo", comment: "" }
+    openSection: null, // ID de la sección abierta ("habitacion", etc)
+    openSubsection: null, // ID de la subsección abierta ("hab_puertas", etc)
+    terrazaStatus: null, // "Si" o "No"
     pendingSyncs: [],
     completedRooms: getSavedCompletedRooms(),
     isOnline: navigator.onLine
@@ -138,6 +163,27 @@ function updateAuditPane() {
     });
 }
 
+function isSubsectionComplete(subId) {
+    const sec = AUDIT_STRUCTURE.find(s => s.subsections.find(sub => sub.id === subId));
+    const sub = sec.subsections.find(s => s.id === subId);
+    for (let i = 0; i < sub.points.length; i++) {
+        if (!state.currentAudit[`${sub.id}_${i}`]?.status) return false;
+    }
+    return true;
+}
+
+function isAuditComplete() {
+    for (const sec of AUDIT_STRUCTURE) {
+        if (sec.id === 'terraza' && state.terrazaStatus === 'No') continue;
+        if (sec.id === 'terraza' && !state.terrazaStatus) return false;
+        
+        for (const sub of sec.subsections) {
+            if (!isSubsectionComplete(sub.id)) return false;
+        }
+    }
+    return true;
+}
+
 function renderAuditPane() {
     if (!state.selectedRoom) {
         return `
@@ -165,63 +211,106 @@ function renderAuditPane() {
         `;
     }
 
-    const isComplete = CHECKLIST_ITEMS.every(item => state.currentAudit[item.id]?.status !== undefined);
-
-    return `
+    let html = `
         <div class="audit-header">
             <div>
                 <h2>Habitación ${state.selectedRoom}</h2>
                 <span class="auditada-badge">Limpió: ${state.selectedAuditada}</span>
             </div>
-            <button class="btn-save-report" onclick="saveAudit()" ${!isComplete ? 'disabled' : ''}>
+            <button class="btn-save-report" onclick="saveAudit()" ${!isAuditComplete() ? 'disabled' : ''}>
                 💾 Guardar Reporte
             </button>
         </div>
-        <div class="checklist">
-            ${CHECKLIST_ITEMS.map(item => renderCheckItem(item)).join('')}
-        </div>
+        <div class="sections-container">
     `;
-}
 
-function renderCheckItem(item) {
-    const auditData = state.currentAudit[item.id] || {};
-    const st = auditData.status;
+    AUDIT_STRUCTURE.forEach(sec => {
+        const isSecOpen = state.openSection === sec.id;
+        
+        let secStatusHtml = '';
+        if (sec.id === 'terraza' && state.terrazaStatus === 'No') {
+            secStatusHtml = '<span class="badge-na">N/A</span>';
+        }
 
-    return `
-        <div class="check-item">
-            <div class="check-item-header">
-                ${item.icon} ${item.label}
+        html += `
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('${sec.id}')">
+                <h3>${sec.title} ${secStatusHtml}</h3>
+                <span class="icon">${isSecOpen ? '▼' : '▶'}</span>
             </div>
-            <div class="check-actions">
-                <button class="action-btn good ${st === 'Bien' ? 'selected' : ''}" onclick="setAuditStatus('${item.id}', 'Bien')">😊 Bien</button>
-                <button class="action-btn regular ${st === 'Regular' ? 'selected' : ''}" onclick="setAuditStatus('${item.id}', 'Regular')">😐 Regular</button>
-                <button class="action-btn bad ${st === 'Mal' ? 'selected' : ''}" onclick="setAuditStatus('${item.id}', 'Mal')">🙁 Mal</button>
-            </div>
-            <div class="comment-section">
-                <div class="comment-text" id="comment-text-${item.id}">${auditData.comment || ''}</div>
-                <button id="btn-mic-${item.id}" class="btn-mic" onclick="startDictation('${item.id}')">
-                    🎤 ${auditData.comment ? 'Volver a dictar comentario' : 'Agregar comentario por voz'}
-                </button>
-            </div>
-        </div>
-    `;
+        `;
+
+        if (isSecOpen) {
+            html += `<div class="section-body">`;
+            
+            if (sec.id === 'terraza') {
+                html += `
+                <div class="terraza-prompt">
+                    <p>¿Tiene terraza esta habitación?</p>
+                    <div class="terraza-btns">
+                        <button class="btn-terraza ${state.terrazaStatus === 'Si' ? 'selected' : ''}" onclick="setTerraza('Si')">Sí tiene</button>
+                        <button class="btn-terraza no-btn ${state.terrazaStatus === 'No' ? 'selected' : ''}" onclick="setTerraza('No')">No tiene</button>
+                    </div>
+                </div>`;
+            }
+
+            if (sec.id !== 'terraza' || state.terrazaStatus === 'Si') {
+                sec.subsections.forEach(sub => {
+                    const isSubOpen = state.openSubsection === sub.id;
+                    const isSubComplete = isSubsectionComplete(sub.id);
+                    
+                    html += `
+                    <div class="subsection-card ${isSubComplete ? 'completed-sub' : ''} ${isSubOpen ? 'active-sub' : ''}">
+                        <div class="subsection-header" onclick="toggleSubsection('${sub.id}')">
+                            <h4>📄 ${sub.title} ${isSubComplete ? '✅' : ''}</h4>
+                            <span class="icon">${isSubOpen ? '▼' : '▶'}</span>
+                        </div>
+                    `;
+                    
+                    if (isSubOpen) {
+                        html += `<div class="subsection-body">`;
+                        sub.points.forEach((pointName, pIdx) => {
+                            const key = `${sub.id}_${pIdx}`;
+                            const st = state.currentAudit[key]?.status;
+                            const comment = state.currentAudit[key]?.comment || '';
+                            
+                            html += `
+                            <div class="point-item">
+                                <p class="point-title">• ${pointName}</p>
+                                <div class="point-actions-new">
+                                    <button class="action-btn-sm good ${st === 'Completo' ? 'selected' : ''}" onclick="setAuditStatus('${sub.id}', ${pIdx}, 'Completo')">Completo</button>
+                                    <button class="action-btn-sm bad ${st === 'Incompleto' ? 'selected' : ''}" onclick="setAuditStatus('${sub.id}', ${pIdx}, 'Incompleto')">Incompleto</button>
+                                    <button class="action-btn-sm neutral ${st === 'No Aplica' ? 'selected' : ''}" onclick="setAuditStatus('${sub.id}', ${pIdx}, 'No Aplica')">No Aplica</button>
+                                </div>
+                                <div class="comment-section-sm">
+                                    ${comment ? `<div class="comment-text-sm">${comment}</div>` : ''}
+                                    <button id="btn-mic-${key}" class="btn-mic-sm" onclick="startDictation('${key}')">
+                                        🎤 ${comment ? 'Reescribir comentario' : 'Comentario por Voz'}
+                                    </button>
+                                </div>
+                            </div>`;
+                        });
+                        html += `</div>`; // .subsection-body
+                    }
+                    html += `</div>`; // .subsection-card
+                });
+            }
+            html += `</div>`; // .section-body
+        }
+        html += `</div>`; // .section-card
+    });
+
+    html += `</div>`; // .sections-container
+    return html;
 }
 
 function renderLoginModal() {
-    const today = new Date().toLocaleDateString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-
+    const today = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     return `
         <div class="login-bg">
             <div class="login-glass-card">
                 <h2>Auditoria de Limpieza 🔍</h2>
-                <p style="text-transform: capitalize; font-weight: 500; color: var(--primary); margin-bottom: 20px;">
-                    📅 ${today}
-                </p>
+                <p style="text-transform: capitalize; font-weight: 500; color: var(--primary); margin-bottom: 20px;">📅 ${today}</p>
                 <input type="text" id="auditor-name-input" class="input-large" placeholder="Escribe tu nombre..." autocomplete="off">
                 <button class="btn-jumbo" onclick="saveAuditorName()">Empezar</button>
             </div>
@@ -233,10 +322,7 @@ function renderLoginModal() {
 
 window.saveAuditorName = function () {
     const input = document.getElementById('auditor-name-input').value.trim();
-    if (input.length < 2) {
-        alert("Por favor ingresa un nombre válido.");
-        return;
-    }
+    if (input.length < 2) return alert("Por favor ingresa un nombre válido.");
     state.auditorName = input;
     localStorage.setItem('auditorName', input);
     render();
@@ -250,8 +336,11 @@ window.changeAuditor = function () {
 
 window.selectRoom = function (num) {
     state.selectedRoom = num;
-    state.selectedAuditada = null; // Reset auditada
-    state.currentAudit = {}; // Reset previous audit data
+    state.selectedAuditada = null; 
+    state.currentAudit = {}; 
+    state.openSection = null;
+    state.openSubsection = null;
+    state.terrazaStatus = null;
     updateAuditPane();
     const ap = document.getElementById('audit-pane');
     if (ap) ap.scrollTo(0, 0);
@@ -262,23 +351,127 @@ window.selectAuditada = function (name) {
     updateAuditPane();
 };
 
-window.setAuditStatus = function (id, value) {
-    if (!state.currentAudit[id]) state.currentAudit[id] = {};
-    state.currentAudit[id].status = value;
+window.toggleSection = function (secId) {
+    if (state.openSection === secId) {
+        state.openSection = null;
+    } else {
+        state.openSection = secId;
+    }
     updateAuditPane();
 };
 
-window.saveAudit = function () {
-    const isComplete = CHECKLIST_ITEMS.every(item => state.currentAudit[item.id]?.status !== undefined);
-    if (!isComplete) return;
+window.toggleSubsection = function (subId) {
+    if (state.openSubsection === subId) {
+        if (!isSubsectionComplete(subId)) {
+            showToast("Debes calificar todos los puntos antes de cerrar.");
+            return;
+        }
+        state.openSubsection = null;
+    } else {
+        state.openSubsection = subId;
+    }
+    updateAuditPane();
+};
 
-    const auditData = {
+window.setTerraza = function(val) {
+    state.terrazaStatus = val;
+    if (val === 'No') {
+        state.openSubsection = null;
+    }
+    updateAuditPane();
+};
+
+window.setAuditStatus = function (subId, pIdx, value) {
+    const key = `${subId}_${pIdx}`;
+    if (!state.currentAudit[key]) state.currentAudit[key] = {};
+    state.currentAudit[key].status = value;
+    
+    if (isSubsectionComplete(subId)) {
+        state.openSubsection = null; // Cierra en automático
+        showToast("¡Subsección completada!");
+    }
+    updateAuditPane();
+};
+
+window.startDictation = function (key) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Tu dispositivo no soporta dictado por voz.");
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-MX';
+    
+    const btn = document.getElementById(`btn-mic-${key}`);
+    btn.classList.add('recording');
+    btn.innerHTML = '🔴 Escuchando...';
+
+    recognition.onresult = (event) => {
+        if (!state.currentAudit[key]) state.currentAudit[key] = {};
+        state.currentAudit[key].comment = event.results[0][0].transcript;
+        btn.classList.remove('recording');
+        updateAuditPane();
+    };
+
+    recognition.onerror = (event) => {
+        showToast("Error de micrófono: " + event.error);
+        btn.classList.remove('recording');
+    };
+
+    recognition.onend = () => {
+        btn.classList.remove('recording');
+        if (state.currentAudit[key]?.comment) {
+            btn.innerHTML = '🎤 Reescribir comentario';
+        } else {
+            btn.innerHTML = '🎤 Comentario por Voz';
+        }
+    };
+
+    recognition.start();
+};
+
+function prepareAuditDataForSync() {
+    const fallos = [];
+    let countCompleto = 0;
+    let countIncompleto = 0;
+    let countNA = 0;
+
+    AUDIT_STRUCTURE.forEach(sec => {
+        if (sec.id === 'terraza' && state.terrazaStatus === 'No') return;
+
+        sec.subsections.forEach(sub => {
+            sub.points.forEach((pointName, pIdx) => {
+                const key = `${sub.id}_${pIdx}`;
+                const data = state.currentAudit[key];
+                if (data) {
+                    if (data.status === 'Completo') countCompleto++;
+                    if (data.status === 'Incompleto') {
+                        countIncompleto++;
+                        let falloText = `${sec.title} > ${sub.title} > ${pointName}`;
+                        if (data.comment) falloText += ` (🗯️ ${data.comment})`;
+                        fallos.push(falloText);
+                    }
+                    if (data.status === 'No Aplica') countNA++;
+                }
+            });
+        });
+    });
+
+    return {
         fecha: new Date().toISOString(),
         auditora: state.auditorName,
         auditada: state.selectedAuditada,
         habitacion: state.selectedRoom,
-        detalles: state.currentAudit
+        terraza: state.terrazaStatus,
+        completo: countCompleto,
+        incompleto: countIncompleto,
+        na: countNA,
+        fallos_str: fallos.join('\\n') || 'Todo en orden 👍'
     };
+}
+
+window.saveAudit = function () {
+    if (!isAuditComplete()) return;
+
+    const auditData = prepareAuditDataForSync();
 
     if (!state.completedRooms.includes(state.selectedRoom)) {
         state.completedRooms.push(state.selectedRoom);
@@ -294,6 +487,9 @@ window.saveAudit = function () {
     state.selectedRoom = null;
     state.selectedAuditada = null;
     state.currentAudit = {};
+    state.openSection = null;
+    state.openSubsection = null;
+    state.terrazaStatus = null;
     updateAuditPane();
 
     if (state.isOnline) {
@@ -301,56 +497,9 @@ window.saveAudit = function () {
     }
 };
 
-window.startDictation = function (itemId) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Tu dispositivo o navegador no soporta el dictado por voz. Recomendado: Google Chrome en Android/Tablet.");
-        return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'es-MX';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    const btn = document.getElementById(`btn-mic-${itemId}`);
-    btn.classList.add('recording');
-    btn.innerHTML = '🔴 Escuchando... Habla ahora';
-
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (!state.currentAudit[itemId]) state.currentAudit[itemId] = {};
-
-        // Append or replace? Replace makes it easier if they make a mistake
-        state.currentAudit[itemId].comment = transcript;
-
-        btn.classList.remove('recording');
-        updateAuditPane();
-    };
-
-    recognition.onerror = (event) => {
-        showToast("Error de micrófono: " + event.error);
-        btn.classList.remove('recording');
-        btn.innerHTML = '🎤 Volver a intentar';
-    };
-
-    recognition.onend = () => {
-        btn.classList.remove('recording');
-        // Will re-render normally unless error, if no result, just resets
-        if (state.currentAudit[itemId] && state.currentAudit[itemId].comment) {
-            btn.innerHTML = '🎤 Volver a dictar comentario';
-        } else {
-            btn.innerHTML = '🎤 Agregar comentario por voz';
-        }
-    };
-
-    recognition.start();
-};
-
 // ---- SYNC ----
 async function syncData() {
     if (state.pendingSyncs.length === 0) return;
-
     const btnSync = document.getElementById('btn-sync');
     if (btnSync) {
         btnSync.innerHTML = '↻ Enviando...';
@@ -364,19 +513,14 @@ async function syncData() {
         try {
             const formData = new URLSearchParams();
             formData.append('data', JSON.stringify(syncBatch[i]));
-
             await fetch(GAS_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 body: formData,
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
-
             successCount++;
         } catch (error) {
-            console.error('Error syncing:', error);
             break;
         }
     }
@@ -384,11 +528,10 @@ async function syncData() {
     if (successCount > 0) {
         state.pendingSyncs.splice(0, successCount);
         savePendingSyncs();
-        showToast(`¡Se enviaron ${successCount} reportes al Google Sheet!`);
+        showToast(`¡Se enviaron ${successCount} reportes!`);
     } else {
-        showToast('Error de red. Usa el botón sincronizar más tarde.');
+        showToast('Error de red. Sincroniza más tarde.');
     }
-
     renderHeader();
 }
 
@@ -398,12 +541,8 @@ function showToast(message) {
     if (!toast) return;
     toast.textContent = message;
     toast.classList.add('show');
-
     clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => {
-        toast.classList.remove('show');
-    }, 4000);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
-// Iniciar aplicación
 init();
