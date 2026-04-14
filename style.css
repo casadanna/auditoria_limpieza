@@ -21,9 +21,16 @@
     --header-bg: #283618; /* Verde monte oscuro */
     --header-text: #fefae0;
     
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 10px rgba(0,0,0,0.1);
-    --shadow-lg: 0 15px 30px rgba(0,0,0,0.15);
+    /* Variables nuevas de estilo */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --btn-inset: inset 0 -3px 0 0 rgba(0,0,0,0.15); /* Efecto profundidad 3D */
 }
 
 * {
@@ -265,14 +272,20 @@ main {
 
 .room-btn {
     background-color: var(--bg-color);
-    border: 2px solid transparent;
-    border-radius: 12px;
+    border: none;
+    border-radius: var(--radius-xl);
     padding: 1.25rem 0;
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-main);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.06), var(--btn-inset);
+}
+.room-btn:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
+}
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -480,37 +493,37 @@ main {
 
 .action-btn-sm {
     padding: 0.8rem;
-    border: 2px solid var(--border-color);
-    background: var(--card-bg);
-    border-radius: var(--radius-lg);
+    border: none;
+    background: #f8fafc;
+    border-radius: var(--radius-xl);
     cursor: pointer;
     font-weight: 600;
     font-size: 0.95rem;
     color: var(--text-gray);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.06), var(--btn-inset);
 }
 
 .action-btn-sm:hover {
     background-color: #f1f5f9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.08), var(--btn-inset);
 }
 
 .action-btn-sm.selected {
     color: white;
-    border-color: transparent;
-    transform: scale(1.05);
+    transform: translateY(2px);
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
 .action-btn-sm.good.selected { 
     background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3); 
 }
 .action-btn-sm.bad.selected { 
     background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
-    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3); 
 }
 .action-btn-sm.neutral.selected { 
     background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-    box-shadow: 0 6px 15px rgba(100, 116, 139, 0.3); 
 }
 
 .comment-section-sm {
@@ -843,25 +856,26 @@ main {
 .btn-auditada {
     padding: 1.2rem;
     border: none;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     background: linear-gradient(135deg, var(--card-bg) 0%, #e2e8f0 100%);
     color: var(--text-dark);
     font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-sm);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08), var(--btn-inset);
 }
 
 .btn-auditada:hover {
     background: linear-gradient(135deg, var(--primary) 0%, #0284c7 100%);
     color: white;
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1), var(--btn-inset);
 }
 
 .btn-auditada:active {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(2px);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.25);
 }
 
 .btn-save-report {
@@ -869,12 +883,16 @@ main {
     background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
     color: white;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xl);
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3), var(--btn-inset);
+}
+.btn-save-report:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .btn-save-report:disabled {
