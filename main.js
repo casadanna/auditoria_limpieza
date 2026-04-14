@@ -40,9 +40,10 @@ const AUDIT_STRUCTURE = [
     }
 ];
 
-function getSavedCompletedRooms() {
+function getSavedCompletedRooms(hotel) {
+    if (!hotel) return [];
     try {
-        const saved = JSON.parse(localStorage.getItem('completedRooms_date'));
+        const saved = JSON.parse(localStorage.getItem(`${hotel}_completedRooms_date`));
         const today = new Date().toLocaleDateString('es-ES');
         if (saved && saved.date === today) {
             return saved.rooms || [];
@@ -52,7 +53,8 @@ function getSavedCompletedRooms() {
 }
 
 function saveCompletedRooms() {
-    localStorage.setItem('completedRooms_date', JSON.stringify({
+    if (!state.selectedHotel) return;
+    localStorage.setItem(`${state.selectedHotel}_completedRooms_date`, JSON.stringify({
         date: new Date().toLocaleDateString('es-ES'),
         rooms: state.completedRooms
     }));
@@ -68,7 +70,7 @@ let state = {
     openSubsection: null, 
     terrazaStatus: null, 
     pendingSyncs: [],
-    completedRooms: getSavedCompletedRooms(),
+    completedRooms: getSavedCompletedRooms(localStorage.getItem('selectedHotel')),
     isOnline: navigator.onLine
 };
 
@@ -372,7 +374,9 @@ window.saveAuditorName = function () {
     const passInput = document.getElementById('auditor-pass-input').value.trim();
     
     if (nameInput.length < 2) return alert("Por favor ingresa un nombre válido.");
-    if (passInput !== "8909") return alert("Clave de seguridad incorrecta. Intenta nuevamente.");
+    
+    const requiredPass = state.selectedHotel === 'Huatulco' ? '2303' : '8909';
+    if (passInput !== requiredPass) return alert("Clave de seguridad incorrecta. Intenta nuevamente.");
     
     state.auditorName = nameInput;
     localStorage.setItem('auditorName', nameInput);
@@ -387,13 +391,16 @@ window.changeAuditor = function () {
 
 window.changeHotel = function () {
     state.selectedHotel = null;
+    state.auditorName = null;
     localStorage.removeItem('selectedHotel');
+    localStorage.removeItem('auditorName');
     render();
 };
 
 window.selectHotel = function (hotel) {
     state.selectedHotel = hotel;
     localStorage.setItem('selectedHotel', hotel);
+    state.completedRooms = getSavedCompletedRooms(hotel);
     render();
 };
 
