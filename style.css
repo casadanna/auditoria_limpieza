@@ -287,10 +287,15 @@ main {
     background-color: var(--card-bg);
     border-color: var(--primary);
 }
+.room-btn.completed-room {
+    background-color: var(--success);
+    border-color: var(--success);
+    color: white;
+}
 
 .room-btn.active-room {
-    background-color: var(--primary);
-    border-color: var(--primary);
+    background-color: var(--warning);
+    border-color: var(--warning);
     color: white;
     box-shadow: var(--shadow-md);
     transform: scale(1.05);

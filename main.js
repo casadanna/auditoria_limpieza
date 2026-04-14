@@ -15,12 +15,31 @@ const CHECKLIST_ITEMS = [
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMmTSpH0ZRX-HOFlvFW_yQKFEnJ1yadghuSI6LK37HkFIoo/exec';
 
+function getSavedCompletedRooms() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('completedRooms_date'));
+        const today = new Date().toLocaleDateString('es-ES');
+        if (saved && saved.date === today) {
+            return saved.rooms || [];
+        }
+    } catch (e) {}
+    return [];
+}
+
+function saveCompletedRooms() {
+    localStorage.setItem('completedRooms_date', JSON.stringify({
+        date: new Date().toLocaleDateString('es-ES'),
+        rooms: state.completedRooms
+    }));
+}
+
 let state = {
     auditorName: localStorage.getItem('auditorName') || null,
     selectedRoom: null,
     selectedAuditada: null,
     currentAudit: {},
     pendingSyncs: [],
+    completedRooms: getSavedCompletedRooms(),
     isOnline: navigator.onLine
 };
 
@@ -66,7 +85,7 @@ function render() {
                 <div class="pane-title">🏠 Habitaciones</div>
                 <div class="rooms-grid">
                     ${Array.from({ length: NUM_ROOMS }, (_, i) => i + 1).map(num => `
-                        <button class="room-btn ${state.selectedRoom === num ? 'active-room' : ''}" onclick="selectRoom(${num})">
+                        <button class="room-btn ${state.completedRooms.includes(num) ? 'completed-room' : ''} ${state.selectedRoom === num ? 'active-room' : ''}" onclick="selectRoom(${num})">
                             ${num}
                         </button>
                     `).join('')}
@@ -106,12 +125,17 @@ function updateAuditPane() {
     const ap = document.getElementById('audit-pane');
     if (ap) ap.innerHTML = renderAuditPane();
 
-    // Update active room classes in the list
-    document.querySelectorAll('.room-btn').forEach(btn => btn.classList.remove('active-room'));
-    if (state.selectedRoom) {
-        const btns = document.querySelectorAll('.room-btn');
-        if (btns[state.selectedRoom - 1]) btns[state.selectedRoom - 1].classList.add('active-room');
-    }
+    const btns = document.querySelectorAll('.room-btn');
+    btns.forEach((btn, idx) => {
+        const num = idx + 1;
+        btn.classList.remove('active-room');
+        if (state.completedRooms.includes(num)) {
+            btn.classList.add('completed-room');
+        }
+        if (state.selectedRoom === num) {
+            btn.classList.add('active-room');
+        }
+    });
 }
 
 function renderAuditPane() {
@@ -255,6 +279,11 @@ window.saveAudit = function () {
         habitacion: state.selectedRoom,
         detalles: state.currentAudit
     };
+
+    if (!state.completedRooms.includes(state.selectedRoom)) {
+        state.completedRooms.push(state.selectedRoom);
+        saveCompletedRooms();
+    }
 
     state.pendingSyncs.push(auditData);
     savePendingSyncs();
