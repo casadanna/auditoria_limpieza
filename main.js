@@ -172,14 +172,21 @@ function isSubsectionComplete(subId) {
     return true;
 }
 
+function isSectionComplete(secId) {
+    const sec = AUDIT_STRUCTURE.find(s => s.id === secId);
+    if (!sec) return false;
+    if (sec.id === 'terraza' && state.terrazaStatus === 'No') return true;
+    if (sec.id === 'terraza' && !state.terrazaStatus) return false;
+    
+    for (const sub of sec.subsections) {
+        if (!isSubsectionComplete(sub.id)) return false;
+    }
+    return true;
+}
+
 function isAuditComplete() {
     for (const sec of AUDIT_STRUCTURE) {
-        if (sec.id === 'terraza' && state.terrazaStatus === 'No') continue;
-        if (sec.id === 'terraza' && !state.terrazaStatus) return false;
-        
-        for (const sub of sec.subsections) {
-            if (!isSubsectionComplete(sub.id)) return false;
-        }
+        if (!isSectionComplete(sec.id)) return false;
     }
     return true;
 }
@@ -380,6 +387,11 @@ window.setTerraza = function(val) {
     state.terrazaStatus = val;
     if (val === 'No') {
         state.openSubsection = null;
+        state.openSection = null; // Cierra la sección completa si es No
+    } else {
+        if (isSectionComplete('terraza')) {
+            state.openSection = null;
+        }
     }
     updateAuditPane();
 };
@@ -391,7 +403,17 @@ window.setAuditStatus = function (subId, pIdx, value) {
     
     if (isSubsectionComplete(subId)) {
         state.openSubsection = null; // Cierra en automático
-        showToast("¡Subsección completada!");
+        
+        // Verifica si TODA LA SECCIÓN se completó con esta respuesta
+        const parentSec = AUDIT_STRUCTURE.find(s => s.subsections.find(sub => sub.id === subId));
+        if (parentSec) {
+            if (isSectionComplete(parentSec.id)) {
+                state.openSection = null; // CIERRA TODA LA SECCIÓN
+                showToast("¡Sección " + parentSec.title.split(' ')[1] + " Completada! 🎉");
+            } else {
+                showToast("¡Subsección completada!");
+            }
+        }
     }
     updateAuditPane();
 };
