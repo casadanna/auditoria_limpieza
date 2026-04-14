@@ -6,33 +6,33 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMm
 const AUDIT_STRUCTURE = [
     {
         id: "habitacion",
-        title: "Habitación",
+        title: "🛏️ Habitación",
         subsections: [
-            { id: "hab_puertas", title: "Puertas", points: ["Limpieza", "Candado"] },
-            { id: "hab_paredes", title: "Paredes Y Piso", points: ["Apagadores", "Soclos", "Ventanas", "Paredes", "Piso"] },
-            { id: "hab_muebles", title: "Muebles", points: ["Escritorio", "Closet", "Repisa de TV", "Cortineros", "Buros", "Lamparas", "Espejos", "Silla"] },
-            { id: "hab_amenidades", title: "Amenidades", points: ["Café", "Botella de Agua", "Ganchos", "Bolsa de Lavanderia"] },
-            { id: "hab_electricos", title: "Eléctricos", points: ["Focos Funcionando", "Aire Acondicionado Funcionando", "TV Limpia y funcionando", "Teléfono Funcionando y Limpio", "Cafetera Funcionando", "Frigobar Funcionando", "Microondas"] },
-            { id: "hab_camas", title: "Camas", points: ["Tendido", "Almohadas Alineadas", "Limpieza en Cabezeras", "Camino de Cama", "Limpieza Base de Cama", "Limpieza bajo cama"] },
-            { id: "hab_cortinas", title: "Cortinas", points: ["Limpieza"] }
+            { id: "hab_puertas", title: "🚪 Puertas", points: ["✨ Limpieza", "🔒 Candado"] },
+            { id: "hab_paredes", title: "🧱 Paredes Y Piso", points: ["💡 Apagadores", "🪵 Soclos", "🪟 Ventanas", "🧱 Paredes", "🧹 Piso"] },
+            { id: "hab_muebles", title: "🪑 Muebles", points: ["📝 Escritorio", "👕 Closet", "📺 Repisa de TV", "🧣 Cortineros", "🪆 Buros", "🛋️ Lámparas", "🪞 Espejos", "🪑 Silla"] },
+            { id: "hab_amenidades", title: "☕ Amenidades", points: ["☕ Café", "💧 Botella de Agua", "👔 Ganchos", "🛍️ Bolsa de Lavandería"] },
+            { id: "hab_electricos", title: "🔌 Eléctricos", points: ["💡 Focos Funcionando", "❄️ Aire Acondicionado Funcionando", "📺 TV Limpia y funcionando", "📞 Teléfono Funcionando", "☕ Cafetera Funcionando", "🧊 Frigobar Funcionando", "🕰️ Microondas"] },
+            { id: "hab_camas", title: "🛌 Camas", points: ["🛏️ Tendido", "☁️ Almohadas Alineadas", "✨ Limpieza Cabeceras", "🧣 Camino de Cama", "🧼 Base de Cama", "🧹 Bajo Cama"] },
+            { id: "hab_cortinas", title: "🪟 Cortinas", points: ["✨ Limpieza"] }
         ]
     },
     {
         id: "bano",
-        title: "Baño",
+        title: "🚿 Baño",
         subsections: [
-            { id: "bano_amenidades", title: "Amenidades", points: ["Shampoo", "Jabón", "Papel Higienico", "Lustra Calzado"] },
-            { id: "bano_lavabo", title: "Lavabo", points: ["Limpieza Espejo", "Limpieza Lavabo"] },
-            { id: "bano_wc", title: "WC", points: ["Limpio y sin mal olor", "Tanque limpio", "Extractor Limpio"] },
-            { id: "bano_ducha", title: "Ducha", points: ["Piso Limpio", "Paredes Limpias", "Cromos Limpios", "Cortina/Cristal Limpio", "Jabonera Limpia", "Coladera Limpia", "Rieles Limpios"] }
+            { id: "bano_amenidades", title: "🧴 Amenidades", points: ["🧴 Shampoo", "🧼 Jabón", "🧻 Papel Higienico", "👞 Lustra Calzado"] },
+            { id: "bano_lavabo", title: "🚰 Lavabo", points: ["🪞 Limpieza Espejo", "✨ Limpieza Lavabo"] },
+            { id: "bano_wc", title: "🚽 WC", points: ["✨ Limpio y sin mal olor", "💧 Tanque limpio", "🌀 Extractor Limpio"] },
+            { id: "bano_ducha", title: "🛁 Ducha", points: ["🧹 Piso", "🧱 Paredes", "🚰 Cromos", "🚿 Cortina/Cristal", "🧼 Jabonera", "🕳️ Coladera", "📏 Rieles"] }
         ]
     },
     {
         id: "terraza",
-        title: "Terraza",
+        title: "🌅 Terraza",
         hasCondition: true,
         subsections: [
-            { id: "terraza_limpieza", title: "Limpieza", points: ["Cristales", "Rieles", "Muro", "Piso"] }
+            { id: "terraza_limpieza", title: "✨ Limpieza", points: ["🪟 Cristales", "📏 Rieles", "🧱 Muro", "🧹 Piso"] }
         ]
     }
 ];
@@ -60,9 +60,9 @@ let state = {
     selectedRoom: null,
     selectedAuditada: null,
     currentAudit: {}, // "hab_puertas_0": { status: "Completo", comment: "" }
-    openSection: null, // ID de la sección abierta ("habitacion", etc)
-    openSubsection: null, // ID de la subsección abierta ("hab_puertas", etc)
-    terrazaStatus: null, // "Si" o "No"
+    openSection: null, 
+    openSubsection: null, 
+    terrazaStatus: null, 
     pendingSyncs: [],
     completedRooms: getSavedCompletedRooms(),
     isOnline: navigator.onLine
@@ -87,13 +87,13 @@ function setupNetworkListeners() {
     window.addEventListener('online', () => {
         state.isOnline = true;
         renderHeader();
-        showToast('Conexión restaurada');
+        showToast('Conexión restaurada 🌐');
         if (state.pendingSyncs.length > 0) syncData();
     });
     window.addEventListener('offline', () => {
         state.isOnline = false;
         renderHeader();
-        showToast('Modo Offline Activado');
+        showToast('Modo Offline Activado 📴');
     });
 }
 
@@ -201,11 +201,14 @@ function renderAuditPane() {
                 <h2>Habitación ${state.selectedRoom}</h2>
             </div>
             <div class="auditada-selection">
-                <p style="margin-bottom: 15px; font-weight: 500;">¿Quién realizó la limpieza?</p>
-                <div class="auditada-grid">
-                    ${auditadas.map(name => `
-                        <button class="btn-auditada" onclick="selectAuditada('${name}')">${name}</button>
-                    `).join('')}
+                <div class="auditada-prompt-card">
+                    <span style="font-size: 3rem; display:block; margin-bottom: 10px;">👤</span>
+                    <p style="margin-bottom: 25px; font-weight: 600; font-size: 1.2rem; color: var(--text-dark);">¿Quién realizó la limpieza?</p>
+                    <div class="auditada-grid">
+                        ${auditadas.map(name => `
+                            <button class="btn-auditada friendly-btn" onclick="selectAuditada('${name}')">${name}</button>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
         `;
@@ -217,7 +220,7 @@ function renderAuditPane() {
                 <h2>Habitación ${state.selectedRoom}</h2>
                 <span class="auditada-badge">Limpió: ${state.selectedAuditada}</span>
             </div>
-            <button class="btn-save-report" onclick="saveAudit()" ${!isAuditComplete() ? 'disabled' : ''}>
+            <button class="btn-save-report glowing" onclick="saveAudit()" ${!isAuditComplete() ? 'disabled' : ''}>
                 💾 Guardar Reporte
             </button>
         </div>
