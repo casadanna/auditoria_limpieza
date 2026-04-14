@@ -148,9 +148,6 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    /* Carga la imagen de portada usando la ruta relativa de Vite */
-    background: url('/src/assets/portada.jpeg') no-repeat center center;
-    background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;

@@ -1,6 +1,9 @@
 import './style.css';
 import huatulcoImg from './src/assets/huatulco.jpg';
+import huatulcoPortada from './src/assets/huatulco_portada.jpg';
 import colimaImg from './src/assets/portada.jpeg';
+
+const NUM_ROOMS = 35;
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMmTSpH0ZRX-HOFlvFW_yQKFEnJ1yadghuSI6LK37HkFIoo/exec';
 
 const AUDIT_STRUCTURE = [
@@ -347,8 +350,9 @@ function renderHotelSelector() {
 
 function renderLoginModal() {
     const today = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const bgImg = state.selectedHotel === 'Huatulco' ? huatulcoPortada : colimaImg;
     return `
-        <div class="login-bg">
+        <div class="login-bg" style="background: url('${bgImg}') no-repeat center center; background-size: cover;">
             <div class="login-glass-card">
                 <h2>${state.selectedHotel === 'Huatulco' ? '🌴 Huatulco' : '🌆 Colima'} 🔍</h2>
                 <p style="text-transform: capitalize; font-weight: 500; color: var(--primary); margin-bottom: 20px;">📅 ${today}</p>
