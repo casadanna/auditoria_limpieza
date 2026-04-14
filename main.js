@@ -397,6 +397,8 @@ window.setTerraza = function(val) {
 };
 
 window.setAuditStatus = function (subId, pIdx, value) {
+    if (navigator.vibrate) navigator.vibrate(20); // Ligero toque háptico
+
     const key = `${subId}_${pIdx}`;
     if (!state.currentAudit[key]) state.currentAudit[key] = {};
     state.currentAudit[key].status = value;
