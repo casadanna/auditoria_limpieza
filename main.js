@@ -454,7 +454,7 @@ window.startDictation = function (key) {
 };
 
 function prepareAuditDataForSync() {
-    const fallos = [];
+    const detalles = [];
     let countCompleto = 0;
     let countIncompleto = 0;
     let countNA = 0;
@@ -462,19 +462,34 @@ function prepareAuditDataForSync() {
     AUDIT_STRUCTURE.forEach(sec => {
         if (sec.id === 'terraza' && state.terrazaStatus === 'No') return;
 
+        // Strip emojis for the Excel report for a cleaner look
+        const cleanSecTitle = sec.title.replace(/[\u1000-\uFFFF]+/g, '').trim();
+
         sec.subsections.forEach(sub => {
+            const cleanSubTitle = sub.title.replace(/[\u1000-\uFFFF]+/g, '').trim();
+
             sub.points.forEach((pointName, pIdx) => {
                 const key = `${sub.id}_${pIdx}`;
                 const data = state.currentAudit[key];
                 if (data) {
-                    if (data.status === 'Completo') countCompleto++;
-                    if (data.status === 'Incompleto') {
+                    const cleanPointName = pointName.replace(/[\u1000-\uFFFF]+/g, '').trim();
+                    
+                    if (data.status === 'Completo') {
+                        countCompleto++;
+                        if (data.comment) {
+                            detalles.push(`✅ [Completado]: ${cleanSubTitle} > ${cleanPointName} | 🗣️ Nota: "${data.comment}"`);
+                        }
+                    } else if (data.status === 'Incompleto') {
                         countIncompleto++;
-                        let falloText = `${sec.title} > ${sub.title} > ${pointName}`;
-                        if (data.comment) falloText += ` (🗯️ ${data.comment})`;
-                        fallos.push(falloText);
+                        let texto = `❌ [Falló]: ${cleanSubTitle} > ${cleanPointName}`;
+                        if (data.comment) texto += ` | 🗣️ Nota: "${data.comment}"`;
+                        detalles.push(texto);
+                    } else if (data.status === 'No Aplica') {
+                        countNA++;
+                        if (data.comment) {
+                            detalles.push(`➖ [N/A]: ${cleanSubTitle} > ${cleanPointName} | 🗣️ Nota: "${data.comment}"`);
+                        }
                     }
-                    if (data.status === 'No Aplica') countNA++;
                 }
             });
         });
@@ -489,7 +504,7 @@ function prepareAuditDataForSync() {
         completo: countCompleto,
         incompleto: countIncompleto,
         na: countNA,
-        fallos_str: fallos.join('\\n') || 'Todo en orden 👍'
+        fallos_str: detalles.join('\n') || '✅ Todo en orden sin observaciones.'
     };
 }
 
