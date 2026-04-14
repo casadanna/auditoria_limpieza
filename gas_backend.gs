@@ -10,7 +10,10 @@ function doPost(e) {
     }
     
     var data = JSON.parse(rawData);
-    var sheetId = "13n-axaQAwd1R6gqJciwwnYf29MqSdZVVQviWIeujJlk";
+    var sheetId = "13n-axaQAwd1R6gqJciwwnYf29MqSdZVVQviWIeujJlk"; // Default Casa Danna Colima
+    if (data.hotel === "Huatulco") {
+      sheetId = "1pBkIaB5okWmTaEBlHQwcjdcMDaKsNAvQRkQLIaB7zp0";
+    }
     var ss = SpreadsheetApp.openById(sheetId);
     
     var sheet = ss.getSheetByName("Registros_V4");

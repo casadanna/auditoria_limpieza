@@ -1,4 +1,4 @@
-const CACHE_NAME = 'casa-danna-v12';
+const CACHE_NAME = 'casa-danna-v13';
 
 self.addEventListener('install', (e) => {
     self.skipWaiting();

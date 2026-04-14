@@ -1,6 +1,6 @@
 import './style.css';
-
-const NUM_ROOMS = 35;
+import huatulcoImg from './src/assets/huatulco.jpg';
+import colimaImg from './src/assets/portada.jpeg';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMmTSpH0ZRX-HOFlvFW_yQKFEnJ1yadghuSI6LK37HkFIoo/exec';
 
 const AUDIT_STRUCTURE = [
@@ -56,6 +56,7 @@ function saveCompletedRooms() {
 }
 
 let state = {
+    selectedHotel: localStorage.getItem('selectedHotel') || null,
     auditorName: localStorage.getItem('auditorName') || null,
     selectedRoom: null,
     selectedAuditada: null,
@@ -98,6 +99,10 @@ function setupNetworkListeners() {
 }
 
 function render() {
+    if (!state.selectedHotel) {
+        appDiv.innerHTML = renderHotelSelector();
+        return;
+    }
     if (!state.auditorName) {
         appDiv.innerHTML = renderLoginModal();
         return;
@@ -128,7 +133,7 @@ function renderHeaderHTML() {
     return `
         <header id="main-header">
             <div class="brand-section">
-                <h1>✦ Casa Danna</h1>
+                <h1>✦ ${state.selectedHotel}</h1>
                 ${state.auditorName ? `<span class="auditor-name-display">| Auditora: ${state.auditorName} <a href="#" onclick="changeAuditor()" style="color:#94a3b8; font-size: 0.9rem; margin-left:10px;">(Cambiar)</a></span>` : ''}
             </div>
             <div class="sync-container">
@@ -236,6 +241,7 @@ function renderAuditPane() {
 
     AUDIT_STRUCTURE.forEach(sec => {
         const isSecOpen = state.openSection === sec.id;
+        const isSecComplete = isSectionComplete(sec.id);
         
         let secStatusHtml = '';
         if (sec.id === 'terraza' && state.terrazaStatus === 'No') {
@@ -244,8 +250,8 @@ function renderAuditPane() {
 
         html += `
         <div class="section-card">
-            <div class="section-header" onclick="toggleSection('${sec.id}')">
-                <h3>${sec.title} ${secStatusHtml}</h3>
+            <div class="section-header ${isSecComplete ? 'completed-section-header' : ''}" onclick="toggleSection('${sec.id}')">
+                <h3>${sec.title} ${secStatusHtml} ${isSecComplete ? '✅' : ''}</h3>
                 <span class="icon">${isSecOpen ? '▼' : '▶'}</span>
             </div>
         `;
@@ -314,15 +320,42 @@ function renderAuditPane() {
     return html;
 }
 
+function renderHotelSelector() {
+    return `
+        <div class="hotel-selector-bg">
+            <h2 class="hotel-title-pop">SISTEMA DE AUDITORÍAS</h2>
+            <p class="hotel-subtitle-pop">Selecciona la propiedad que vas a inspeccionar</p>
+            <div class="hotel-cards-container">
+                <div class="hotel-card" onclick="selectHotel('Huatulco')">
+                    <img src="${huatulcoImg}" alt="Casa Danna Huatulco">
+                    <div class="hotel-card-content">
+                        <h3>Casa Danna Huatulco</h3>
+                        <p>Playa y Arena →</p>
+                    </div>
+                </div>
+                <div class="hotel-card colima-card" onclick="selectHotel('Colima')">
+                    <img src="${colimaImg}" alt="Casa Danna Colima">
+                    <div class="hotel-card-content">
+                        <h3>Casa Danna Colima</h3>
+                        <p>Ciudad y Descanso →</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function renderLoginModal() {
     const today = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     return `
         <div class="login-bg">
             <div class="login-glass-card">
-                <h2>Auditoria de Limpieza 🔍</h2>
+                <h2>${state.selectedHotel === 'Huatulco' ? '🌴 Huatulco' : '🌆 Colima'} 🔍</h2>
                 <p style="text-transform: capitalize; font-weight: 500; color: var(--primary); margin-bottom: 20px;">📅 ${today}</p>
                 <input type="text" id="auditor-name-input" class="input-large" placeholder="Escribe tu nombre..." autocomplete="off">
-                <button class="btn-jumbo" onclick="saveAuditorName()">Empezar</button>
+                <input type="password" id="auditor-pass-input" class="input-large" placeholder="Clave de seguridad" autocomplete="off" style="margin-top: 15px;">
+                <button class="btn-jumbo" onclick="saveAuditorName()" style="margin-top: 25px;">Ingresar</button>
+                <div style="margin-top:20px;"><a href="#" onclick="changeHotel()" style="color:#64748b; font-size:0.9rem; text-decoration: underline;">← Elegir otra propiedad</a></div>
             </div>
         </div>
     `;
@@ -331,16 +364,32 @@ function renderLoginModal() {
 // ---- ACTIONS ----
 
 window.saveAuditorName = function () {
-    const input = document.getElementById('auditor-name-input').value.trim();
-    if (input.length < 2) return alert("Por favor ingresa un nombre válido.");
-    state.auditorName = input;
-    localStorage.setItem('auditorName', input);
+    const nameInput = document.getElementById('auditor-name-input').value.trim();
+    const passInput = document.getElementById('auditor-pass-input').value.trim();
+    
+    if (nameInput.length < 2) return alert("Por favor ingresa un nombre válido.");
+    if (passInput !== "8909") return alert("Clave de seguridad incorrecta. Intenta nuevamente.");
+    
+    state.auditorName = nameInput;
+    localStorage.setItem('auditorName', nameInput);
     render();
 };
 
 window.changeAuditor = function () {
     state.auditorName = null;
     localStorage.removeItem('auditorName');
+    render();
+};
+
+window.changeHotel = function () {
+    state.selectedHotel = null;
+    localStorage.removeItem('selectedHotel');
+    render();
+};
+
+window.selectHotel = function (hotel) {
+    state.selectedHotel = hotel;
+    localStorage.setItem('selectedHotel', hotel);
     render();
 };
 
@@ -499,6 +548,7 @@ function prepareAuditDataForSync() {
 
     return {
         fecha: new Date().toISOString(),
+        hotel: state.selectedHotel,
         auditora: state.auditorName,
         auditada: state.selectedAuditada,
         habitacion: state.selectedRoom,
