@@ -3,7 +3,10 @@ import huatulcoImg from './src/assets/huatulco.jpg';
 import huatulcoPortada from './src/assets/huatulco_portada.jpg';
 import colimaImg from './src/assets/portada.jpeg';
 
-const NUM_ROOMS = 35;
+const NUM_ROOMS = {
+    'Huatulco': 57,
+    'Colima': 30
+};
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxB0vqxRc5opINc15oX6QMmTSpH0ZRX-HOFlvFW_yQKFEnJ1yadghuSI6LK37HkFIoo/exec';
 
 const AUDIT_STRUCTURE = [
@@ -119,7 +122,7 @@ function render() {
             <div class="rooms-pane">
                 <div class="pane-title">🏠 Habitaciones</div>
                 <div class="rooms-grid">
-                    ${Array.from({ length: NUM_ROOMS }, (_, i) => i + 1).map(num => `
+                    ${Array.from({ length: NUM_ROOMS[state.selectedHotel] || 30 }, (_, i) => i + 1).map(num => `
                         <button class="room-btn ${state.completedRooms.includes(num) ? 'completed-room' : ''} ${state.selectedRoom === num ? 'active-room' : ''}" onclick="selectRoom(${num})">
                             ${num}
                         </button>
